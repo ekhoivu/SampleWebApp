@@ -5,9 +5,9 @@
 * 
 *  Name: Khoi Vu Student ID: 124611203 Date: June 15th, 2022
 *
-*  Online (Heroku) URL: 
+*  Online (Heroku) URL: https://safe-meadow-94435.herokuapp.com/
 *
-*  GitHub Repository URL: 
+*  GitHub Repository URL: https://github.com/ekhoivu/web322-app
 *
 ********************************************************************************/ 
 
