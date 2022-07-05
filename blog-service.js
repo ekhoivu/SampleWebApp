@@ -45,7 +45,7 @@ module.exports.getPublishedPosts = () => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
         for (let i = 0; i < posts.length; i++){
-            if (posts[i].published === true) {
+            if (posts[i].published == true) {
                 postsToReturn.push(posts[i]);
             }
         }
@@ -71,10 +71,26 @@ module.exports.getPostsByCategory = (category) => {
         }
     })
 }
+module.exports.getPublishedPostsByCategory = (category) => {
+    return new Promise((resolve, reject) => {
+        postsToReturn = [];
+        for (let i = 0; i < posts.length; i++) {
+            if (posts[i].category == category && posts[i].published == true) {
+                postsToReturn.push(posts[i]);
+            }
+        }
+        if (postsToReturn.length > 0) {
+            resolve(postsToReturn);
+        } else {
+            reject();
+        }
+    })
+}
 module.exports.getPostsById = (id) => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
-        for (let i = 0, done = false; i < posts.length && !done; i++) {
+        let done = false;
+        for (let i = 0; i < posts.length && !done; i++) {
             if (posts[i].id == id) {
                 postsToReturn.push(posts[i]);
                 done = true;
@@ -110,6 +126,13 @@ module.exports.addPost = (postData) => {
             postData.published = "true";
         }
         postData.id = posts.length + 1;
+
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth()+1;
+        var yyyy = today.getFullYear();
+        today = yyyy + '-' + mm +'-' + dd;
+        postData.postDate = today;
         posts.push(postData);
         resolve(postData);
     })
