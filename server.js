@@ -73,13 +73,6 @@ app.use(function(req,res,next){
   next();
   });
 
-//app.use(function(req,res,next){
-//  let route = req.path.substring(1);
-//  app.locals.activeRoute = (route == "/") ? "/" : "/" + route.replace(/\/(.*)/, "");
-//  app.locals.viewingCategory = req.query.category;
-//  next();
-//});
-
 // setup a 'route' to listen on the default url path (http://localhost)
 app.get("/", (req,res) => {
     res.redirect('/blog');
@@ -107,7 +100,7 @@ app.get("/posts", (req, res) => {
       res.render("posts", {message: "no results"});; // res.status(404).send("There is no post on or after that date!");
     })
   } else if (req.query.id) {
-    blogData.getPostsById(req.query.id).then((data) => {
+    blogData.getPostById(req.query.id).then((data) => {
       res.render("posts", {posts: data}); // res.json(data);
     }).catch((error) => {
       console.log(error);
@@ -232,10 +225,10 @@ app.get('/blog/:id', async (req, res) => {
       // if there's a "category" query, filter the returned posts by category
       if(req.query.category){
           // Obtain the published "posts" by category
-          posts = await blogData.getPublishedPostsByCategory(req.query.category);
+          posts = await blogData.getPostsByCategory(req.query.category);
       }else{
           // Obtain the published "posts"
-          posts = await blogData.getPublishedPosts();
+          posts = await blogData.getAllPosts();
       }
 
       // sort the published posts by postDate
@@ -251,6 +244,7 @@ app.get('/blog/:id', async (req, res) => {
   try{
       // Obtain the post by "id"
       viewData.post = await blogData.getPostById(req.params.id);
+      debugger;      
   }catch(err){
       viewData.message = "no results"; 
   }

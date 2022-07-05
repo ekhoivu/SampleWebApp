@@ -45,7 +45,7 @@ module.exports.getPublishedPosts = () => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
         for (let i = 0; i < posts.length; i++){
-            if (posts[i].published == true) {
+            if (posts[i].published === true) {
                 postsToReturn.push(posts[i]);
             }
         }
@@ -75,7 +75,7 @@ module.exports.getPublishedPostsByCategory = (category) => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
         for (let i = 0; i < posts.length; i++) {
-            if (posts[i].category == category && posts[i].published == true) {
+            if ((posts[i].category == category) && (posts[i].published === true)) {
                 postsToReturn.push(posts[i]);
             }
         }
@@ -86,11 +86,10 @@ module.exports.getPublishedPostsByCategory = (category) => {
         }
     })
 }
-module.exports.getPostsById = (id) => {
+module.exports.getPostById = (id) => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
-        let done = false;
-        for (let i = 0; i < posts.length && !done; i++) {
+        for (let i = 0, done = false; i < posts.length && !done; i++) {
             if (posts[i].id == id) {
                 postsToReturn.push(posts[i]);
                 done = true;
@@ -137,10 +136,3 @@ module.exports.addPost = (postData) => {
         resolve(postData);
     })
 }
-
-
-
-
-
-
-
