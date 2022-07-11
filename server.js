@@ -73,97 +73,14 @@ app.use(function(req,res,next){
   next();
   });
 
-// setup a 'route' to listen on the default url path (http://localhost)
-app.get("/", (req,res) => {
-    res.redirect('/blog');
-})
-
-// setup another route to listen on /about
-app.get("/about", (req,res) => {
-  res.render('about');
-})
-
-// setup another route to listen on /posts
-app.get("/posts", (req, res) => {
-  if (req.query.category) {
-    blogData.getPostsByCategory(req.query.category).then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
+// setup http server to listen on HTTP_PORT
+blogData.initialize().then(() => {
+  app.listen(HTTP_PORT, onHttpStart)
   }).catch((error) => {
-    console.log(error);
-    res.render("posts", {message: "no results"});; // res.status(404).send("There is no post in that category!");
+    console.log(error)
   })
-  } else if (req.query.minDate) {
-    blogData.getPostsByMinDate(req.query.minDate).then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
-    }).catch((error) => {
-      console.log(error);
-      res.render("posts", {message: "no results"});; // res.status(404).send("There is no post on or after that date!");
-    })
-  } else if (req.query.id) {
-    blogData.getPostById(req.query.id).then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
-    }).catch((error) => {
-      console.log(error);
-      res.render("posts", {message: "no results"});; // res.status(404).send("There is no post by that Id");
-    })
-  } else {
-    blogData.getAllPosts().then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
-    })
-  } 
-})
 
-app.post("/posts/add", upload.single("featureImage"), (req, res) => {
-  if(req.file){
-    let streamUpload = (req) => {
-        return new Promise((resolve, reject) => {
-            let stream = cloudinary.uploader.upload_stream(
-                (error, result) => {
-                    if (result) {
-                        resolve(result);
-                    } else {
-                        reject(error);
-                    }
-                }
-            );
-            streamifier.createReadStream(req.file.buffer).pipe(stream);
-        });
-    };
-    async function upload(req) {
-        let result = await streamUpload(req);
-        console.log(result);
-        return result;
-    }
-    upload(req).then((uploaded)=>{
-        processPost(uploaded.url);
-    });
-}else{
-    processPost("");
-}
-function processPost(imageUrl){
-    req.body.featureImage = imageUrl;
-    blogData.addPost(req.body);
-    res.redirect('/posts');
-    // TODO: Process the req.body and add it as a new Blog Post before redirecting to /posts
-} 
-})
-
-// setup another route to listen on /categories
-app.get("/categories", (req,res) => {
-  blogData.getCategories().then((data) => {
-    res.render("categories", {categories: data}); // res.json(data);
-}).catch((error) => {
-  console.log(error);
-  res.render("categories", {message: "no results"});
-})
-})
-// setup another route to listen on /addPosts
-app.get("/posts/add", (req,res) => {
-  res.render('addPost');
-})
-
-// setup another route to listen on /blog
-
+  // setup another route to listen on /blog
 app.get('/blog', async (req, res) => {
 
   // Declare an object to store properties for the view
@@ -210,7 +127,7 @@ app.get('/blog', async (req, res) => {
   // render the "blog" view with all of the data (viewData)
   res.render("blog", {data: viewData})
 
-})
+});
 
 app.get('/blog/:id', async (req, res) => {
 
@@ -225,10 +142,10 @@ app.get('/blog/:id', async (req, res) => {
       // if there's a "category" query, filter the returned posts by category
       if(req.query.category){
           // Obtain the published "posts" by category
-          posts = await blogData.getPostsByCategory(req.query.category);
+          posts = await blogData.getPublishedPostsByCategory(req.query.category);
       }else{
           // Obtain the published "posts"
-          posts = await blogData.getAllPosts();
+          posts = await blogData.getPublishedPosts();
       }
 
       // sort the published posts by postDate
@@ -244,23 +161,113 @@ app.get('/blog/:id', async (req, res) => {
   try{
       // Obtain the post by "id"
       viewData.post = await blogData.getPostById(req.params.id);
-      debugger;      
   }catch(err){
       viewData.message = "no results"; 
   }
 
   try{
-    // Obtain the full list of "categories"
-    let categories = await blogData.getCategories();
+      // Obtain the full list of "categories"
+      let categories = await blogData.getCategories();
 
-    // store the "categories" data in the viewData object (to be passed to the view)
-    viewData.categories = categories;
-}catch(err){
-    viewData.categoriesMessage = "no results"
-}
+      // store the "categories" data in the viewData object (to be passed to the view)
+      viewData.categories = categories;
+  }catch(err){
+      viewData.categoriesMessage = "no results"
+  }
 
   // render the "blog" view with all of the data (viewData)
   res.render("blog", {data: viewData})
+});
+
+// setup a 'route' to listen on the default url path (http://localhost)
+app.get("/", (req,res) => {
+    res.redirect('/blog');
+})
+
+// setup another route to listen on /about
+app.get("/about", (req,res) => {
+  res.render('about');
+})
+
+// setup another route to listen on /posts
+app.get("/posts", (req, res) => {
+  if (req.query.category) {
+    blogData.getPostsByCategory(req.query.category).then((data) => {
+      res.render("posts", {posts: data}); // res.json(data);
+  }).catch((error) => {
+    console.log(error);
+    res.render("posts", {message: "no results"});; // res.status(404).send("There is no post in that category!");
+  })
+  } else if (req.query.minDate) {
+    blogData.getPostsByMinDate(req.query.minDate).then((data) => {
+      res.render("posts", {posts: data}); // res.json(data);
+    }).catch((error) => {
+      console.log(error);
+      res.render("posts", {message: "no results"});; // res.status(404).send("There is no post on or after that date!");
+    })
+  // I commented out the below to match the sample app
+  //} else if (req.query.id) {
+    //blogData.getPostById(req.query.id).then((data) => {
+    //  res.render("posts", {posts: data}); // res.json(data);
+    //}).catch((error) => {
+    //  console.log(error);
+    //  res.render("posts", {message: "no results"});; // res.status(404).send("There is no post by that Id");
+    //})
+} else {
+    blogData.getAllPosts().then((data) => {
+      res.render("posts", {posts: data}); // res.json(data);
+    })
+  } 
+})
+
+// setup another route to listen on /addPosts
+app.get("/posts/add", (req,res) => {
+  res.render('addPost');
+})
+
+app.post("/posts/add", upload.single("featureImage"), (req, res) => {
+  if(req.file){
+    let streamUpload = (req) => {
+        return new Promise((resolve, reject) => {
+            let stream = cloudinary.uploader.upload_stream(
+                (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                }
+            );
+            streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+    };
+    async function upload(req) {
+        let result = await streamUpload(req);
+        console.log(result);
+        return result;
+    }
+    upload(req).then((uploaded)=>{
+        processPost(uploaded.url);
+    });
+}else{
+    processPost("");
+}
+function processPost(imageUrl){
+    req.body.featureImage = imageUrl;
+    blogData.addPost(req.body);
+    res.redirect('/posts');
+    // TODO: Process the req.body and add it as a new Blog Post before redirecting to /posts
+} 
+})
+
+// setup another route to listen on /categories
+app.get("/categories", (req,res) => {
+  blogData.getCategories().then((data) => {
+    res.render("categories", {categories: data}); // res.json(data);
+}).catch((error) => {
+  console.log(error);
+  res.render("categories", {message: "no results"});
+})
 })
 
 app.get("*", (req,res) => {
@@ -268,10 +275,5 @@ app.get("*", (req,res) => {
 })
 
 
-// setup http server to listen on HTTP_PORT
-blogData.initialize().then(() => {
-  app.listen(HTTP_PORT, onHttpStart)
-  }).catch((error) => {
-    console.log(error)
-  })
+
 

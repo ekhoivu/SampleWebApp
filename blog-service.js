@@ -2,6 +2,7 @@ const fs = require("fs");
 var posts = [];
 var categories = [];
 var postsToReturn = [];
+var postToReturn = {};
 module.exports.initialize = () => {
     return new Promise((resolve, reject) => {
         fs.readFile("./data/posts.json", 'utf-8', (err,postsData) => {
@@ -32,15 +33,6 @@ module.exports.getAllPosts = () => {
         }
     })
 }
-module.exports.getCategories = () => {
-    return new Promise((resolve, reject) => {
-        if (categories.length > 0) {
-            resolve(categories);
-        } else {
-            reject();
-        }
-    })
-}
 module.exports.getPublishedPosts = () => {
     return new Promise((resolve, reject) => {
         postsToReturn = [];
@@ -51,6 +43,15 @@ module.exports.getPublishedPosts = () => {
         }
         if (postsToReturn.length > 0) {
             resolve(postsToReturn);
+        } else {
+            reject();
+        }
+    })
+}
+module.exports.getCategories = () => {
+    return new Promise((resolve, reject) => {
+        if (categories.length > 0) {
+            resolve(categories);
         } else {
             reject();
         }
@@ -88,15 +89,15 @@ module.exports.getPublishedPostsByCategory = (category) => {
 }
 module.exports.getPostById = (id) => {
     return new Promise((resolve, reject) => {
-        postsToReturn = [];
+        postToReturn = {};
         for (let i = 0, done = false; i < posts.length && !done; i++) {
             if (posts[i].id == id) {
-                postsToReturn.push(posts[i]);
+                postToReturn = posts[i];
                 done = true;
             }
         }
-        if (postsToReturn.length > 0) {
-            resolve(postsToReturn);
+        if (postToReturn) {
+            resolve(postToReturn);
         } else {
             reject();
         }
@@ -120,18 +121,16 @@ module.exports.getPostsByMinDate = (minDateStr) => {
 module.exports.addPost = (postData) => {
     return new Promise((resolve, reject) => {
         if (!postData.published) {
-            postData.published = "false";
+            postData.published = false;
         } else {
-            postData.published = "true";
+            postData.published = true;
         }
         postData.id = posts.length + 1;
-
         var today = new Date();
         var dd = today.getDate();
         var mm = today.getMonth()+1;
         var yyyy = today.getFullYear();
-        today = yyyy + '-' + mm +'-' + dd;
-        postData.postDate = today;
+        postData.postDate = `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
         posts.push(postData);
         resolve(postData);
     })
