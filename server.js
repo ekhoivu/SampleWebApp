@@ -41,6 +41,8 @@ cloudinary.config({
 
 const upload = multer(); 
 
+app.use(express.urlencoded({extended: true}));
+
 app.engine('.hbs', exphbs.engine({ extname: '.hbs',
 helpers: {
   navLink: function(url, options){
@@ -58,8 +60,15 @@ helpers: {
       }
       },
   safeHTML: function(context){
-        return stripJs(context);
-        }
+      return stripJs(context);
+  },
+  formatDate: function(dateObj){
+      let year = dateObj.getFullYear();
+      let month = (dateObj.getMonth() + 1).toString();
+      let day = dateObj.getDate().toString();
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
+  }
+      
 } }));
 
 app.set('view engine', '.hbs');
@@ -78,7 +87,7 @@ blogData.initialize().then(() => {
   app.listen(HTTP_PORT, onHttpStart)
   }).catch((error) => {
     console.log(error)
-  })
+  });
 
   // setup another route to listen on /blog
 app.get('/blog', async (req, res) => {
@@ -193,36 +202,69 @@ app.get("/about", (req,res) => {
 app.get("/posts", (req, res) => {
   if (req.query.category) {
     blogData.getPostsByCategory(req.query.category).then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
+      if (data.length > 0) {
+        res.render("posts", {posts: data}); // res.json(data);
+      } else {
+        res.render("posts", {message: "no results"});
+      }
   }).catch((error) => {
     console.log(error);
     res.render("posts", {message: "no results"});; // res.status(404).send("There is no post in that category!");
   })
   } else if (req.query.minDate) {
     blogData.getPostsByMinDate(req.query.minDate).then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
+      if (data.length > 0) {
+        res.render("posts", {posts: data}); // res.json(data);
+      } else {
+        res.render("posts", {message: "no results"});
+      }
     }).catch((error) => {
       console.log(error);
       res.render("posts", {message: "no results"});; // res.status(404).send("There is no post on or after that date!");
     })
-  // I commented out the below to match the sample app
-  //} else if (req.query.id) {
-    //blogData.getPostById(req.query.id).then((data) => {
-    //  res.render("posts", {posts: data}); // res.json(data);
-    //}).catch((error) => {
-    //  console.log(error);
-    //  res.render("posts", {message: "no results"});; // res.status(404).send("There is no post by that Id");
-    //})
 } else {
     blogData.getAllPosts().then((data) => {
-      res.render("posts", {posts: data}); // res.json(data);
+      if (data.length > 0) {
+        res.render("posts", {posts: data}); 
+      } else {
+        res.render("posts", {message: "no results"});
+      }
     })
   } 
 })
 
 // setup another route to listen on /addPosts
 app.get("/posts/add", (req,res) => {
-  res.render('addPost');
+  blogData.getCategories().then((data) => {
+    res.render('addPost', {categories: data});
+  }).catch((err) => {
+    res.render('addPost', {categories: []}); 
+  })
+})
+
+app.get("/categories/add", (req,res) => {
+  res.render('addCategory');
+})
+
+app.post("/categories/add", (req,res) => {
+  blogData.addCategory(req.body);
+  res.redirect('/categories');
+})
+
+app.get("/categories/delete/:id", (req,res) => {
+  blogData.deleteCategoryById(req.params.id).then(() => {
+    res.redirect('/categories')
+  }).catch((err) => {
+    res.status(500).send("Unable to Remove Category / Category not found.");
+  })
+})
+
+app.get("/posts/delete/:id", (req,res) => {
+  blogData.deletePostById(req.params.id).then(() => {
+    res.redirect('/posts')
+  }).catch((err) => {
+    res.status(500).send("Unable to Remove Post / Post not found.");
+  })
 })
 
 app.post("/posts/add", upload.single("featureImage"), (req, res) => {
@@ -254,16 +296,22 @@ app.post("/posts/add", upload.single("featureImage"), (req, res) => {
 }
 function processPost(imageUrl){
     req.body.featureImage = imageUrl;
-    blogData.addPost(req.body);
-    res.redirect('/posts');
-    // TODO: Process the req.body and add it as a new Blog Post before redirecting to /posts
+    blogData.addPost(req.body).then((data) => {
+      res.redirect('/posts');
+    }).catch((error) => {
+      res.status(500).send(error);
+    });
 } 
 })
 
 // setup another route to listen on /categories
 app.get("/categories", (req,res) => {
   blogData.getCategories().then((data) => {
-    res.render("categories", {categories: data}); // res.json(data);
+    if (data.length > 0) {
+      res.render("categories", {categories: data}); 
+    } else {
+      res.render("categories", {message: "no results"});
+    }
 }).catch((error) => {
   console.log(error);
   res.render("categories", {message: "no results"});
@@ -271,7 +319,10 @@ app.get("/categories", (req,res) => {
 })
 
 app.get("*", (req,res) => {
-  res.render('404');
+  res.render('404', {
+    data: null,
+    layout: 'main'
+  });
 })
 
 
