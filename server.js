@@ -21,6 +21,7 @@ const exphbs = require('express-handlebars');
 const stripJs = require('strip-js');
 const clientSessions = require("client-sessions")
 
+
 //var blog_service = require(path.join(__dirname, '/blog-service.js'));
 const blogData = require("./blog-service");
 
